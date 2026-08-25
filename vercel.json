@@ -1,20 +1,29 @@
 {
-  "rewrites": [
-    { "source": "/api/chat", "destination": "/api/chat" },
-    { "source": "/api/image", "destination": "/api/image" },
-    { "source": "/api/audio", "destination": "/api/audio" },
-    { "source": "/api/vision", "destination": "/api/vision" },
-    { "source": "/api/video", "destination": "/api/video" }
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "framework": null,
+  "builds": [
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "styles.css", "use": "@vercel/static" },
+    { "src": "app.js", "use": "@vercel/static" },
+    { "src": "config.js", "use": "@vercel/static" },
+    { "src": "api/*.js", "use": "@vercel/node" }
   ],
-  "headers": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
-      ]
-    }
+      "src": "/api/(.*)",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      }
+    },
+    { "src": "/api/chat", "dest": "/api/chat.js" },
+    { "src": "/api/image", "dest": "/api/image.js" },
+    { "src": "/api/audio", "dest": "/api/audio.js" },
+    { "src": "/api/vision", "dest": "/api/vision.js" },
+    { "src": "/api/video", "dest": "/api/video.js" },
+    { "src": "/(.*)", "dest": "/$1" }
   ],
   "functions": {
     "api/video.js": { "maxDuration": 300 },

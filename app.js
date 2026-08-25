@@ -907,6 +907,14 @@ function saveCustomAI() {
     const systemPrompt = document.getElementById('aiSystemPrompt').value.trim();
     if (!name) { showToast('Escribe un nombre para tu IA.'); return; }
     if (!systemPrompt) { showToast('Escribe las instrucciones para tu IA.'); return; }
+    if (!APP.editingAIId) {
+        const plan = getCurrentPlan();
+        if (plan.maxAIs !== -1 && Object.keys(APP.customAIs).length >= plan.maxAIs) {
+            showToast(`Tu plan ${plan.name} permite máximo ${plan.maxAIs} IAs. Mejora tu plan.`, 'error');
+            openPlansModal();
+            return;
+        }
+    }
 
     const aiData = {
         name,
@@ -1216,6 +1224,12 @@ function renderFolders() {
    ============================================ */
 
 function createNewChat() {
+    const plan = getCurrentPlan();
+    if (plan.maxChats !== -1 && Object.keys(APP.chats).length >= plan.maxChats) {
+        showToast(`Tu plan ${plan.name} permite máximo ${plan.maxChats} chats. Elimina algunos o mejora tu plan.`, 'error');
+        openPlansModal();
+        return false;
+    }
     const id = 'chat_' + Date.now();
     APP.chats[id] = { id, title: 'Nueva conversación', messages: [], customAIId: APP.activeCustomAI || null, createdAt: Date.now(), updatedAt: Date.now() };
     APP.currentChatId = id;
@@ -1547,6 +1561,11 @@ function generateTxtFile(content, title) {
 async function generateDocument(message, docType, topic) {
     if (!APP.currentUser) return;
     if (APP.isGenerating) return;
+    if (!canUseFeature('docs')) {
+        showToast('Tu plan no incluye generación de documentos. Mejora tu plan.', 'error');
+        openPlansModal();
+        return;
+    }
     if (!APP.currentChatId) createNewChat();
 
     const chat = APP.chats[APP.currentChatId];
@@ -1757,6 +1776,12 @@ const AI_COLORS = ['#6C63FF','#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','
 async function createAIFromChat(message) {
     if (!APP.currentUser) return;
     if (APP.isGenerating) return;
+    const plan = getCurrentPlan();
+    if (plan.maxAIs !== -1 && Object.keys(APP.customAIs).length >= plan.maxAIs) {
+        showToast(`Tu plan ${plan.name} permite máximo ${plan.maxAIs} IAs. Mejora tu plan para crear más.`, 'error');
+        openPlansModal();
+        return;
+    }
     if (!APP.currentChatId) createNewChat();
 
     const chat = APP.chats[APP.currentChatId];
@@ -2277,6 +2302,11 @@ function openImagePrompt() {
 async function generateImage(prompt) {
     if (!APP.currentUser) return;
     if (APP.isGenerating) return;
+    if (!canUseFeature('images')) {
+        showToast('Tu plan no incluye generación de imágenes. Mejora tu plan.', 'error');
+        openPlansModal();
+        return;
+    }
     if (!APP.currentChatId) createNewChat();
 
     const chat = APP.chats[APP.currentChatId];
@@ -2364,6 +2394,11 @@ function extractAudioPrompt(text) {
 async function generateAudio(prompt) {
     if (!APP.currentUser) return;
     if (APP.isGenerating) return;
+    if (!canUseFeature('audio')) {
+        showToast('Tu plan no incluye generación de música. Mejora tu plan.', 'error');
+        openPlansModal();
+        return;
+    }
     if (!APP.currentChatId) createNewChat();
 
     const chat = APP.chats[APP.currentChatId];
@@ -2475,6 +2510,11 @@ function openVideoPrompt() {
 async function generateVideo(prompt) {
     if (!APP.currentUser) return;
     if (APP.isGenerating) return;
+    if (!canUseFeature('video')) {
+        showToast('Tu plan no incluye generación de video. Mejora tu plan.', 'error');
+        openPlansModal();
+        return;
+    }
     if (!APP.currentChatId) createNewChat();
 
     const chat = APP.chats[APP.currentChatId];
