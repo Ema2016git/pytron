@@ -6,11 +6,11 @@ const HF_API_KEY = window.__HF_KEY || '';
 const HF_API_URL = '/api/chat';
 
 const PLANS = {
-    free:    { id: 'free',    name: 'Free',    icon: '⚡', color: '#888',    price: '$0',    badge: '',          maxChats: 20,  maxAIs: 2,  docs: false, images: 5,  audio: false, video: false, priority: false },
-    pro:     { id: 'pro',     name: 'Pro',     icon: '🚀', color: '#6C63FF', price: '$9.99', badge: 'PRO',       maxChats: 100, maxAIs: 10, docs: true,  images: 50, audio: true,  video: false, priority: false },
-    plus:    { id: 'plus',    name: 'Plus',    icon: '💎', color: '#F59E0B', price: '$19.99',badge: 'PLUS',      maxChats: -1,  maxAIs: -1, docs: true,  images: -1, audio: true,  video: true,  priority: true  },
-    platino: { id: 'platino', name: 'Platino', icon: '👑', color: '#A855F7', price: '$49.99',badge: 'PLATINO',   maxChats: -1,  maxAIs: -1, docs: true,  images: -1, audio: true,  video: true,  priority: true  },
-    admin:   { id: 'admin',   name: 'Admin',   icon: '🛡️', color: '#EF4444', price: '--',    badge: 'ADMIN',     maxChats: -1,  maxAIs: -1, docs: true,  images: -1, audio: true,  video: true,  priority: true  }
+    free:    { id: 'free',    name: 'Free',    icon: '⚡', color: '#888',    price: '$0',    badge: '',          maxChats: 20,  maxAIs: 2,  docs: false, images: 5,  audio: false, video: false, vision: false, priority: false, fastModel: false },
+    pro:     { id: 'pro',     name: 'Pro',     icon: '🚀', color: '#6C63FF', price: '$9.99', badge: 'PRO',       maxChats: 100, maxAIs: 10, docs: true,  images: 50, audio: true,  video: false, vision: false, priority: false, fastModel: false },
+    plus:    { id: 'plus',    name: 'Plus',    icon: '💎', color: '#F59E0B', price: '$19.99',badge: 'PLUS',      maxChats: 500, maxAIs: 25, docs: true,  images: 100,audio: true,  video: false, vision: true,  priority: false, fastModel: false },
+    platino: { id: 'platino', name: 'Platino', icon: '👑', color: '#A855F7', price: '$49.99',badge: 'PLATINO',   maxChats: -1,  maxAIs: -1, docs: true,  images: -1, audio: true,  video: true,  vision: true,  priority: true,  fastModel: true  },
+    admin:   { id: 'admin',   name: 'Admin',   icon: '🛡️', color: '#EF4444', price: '--',    badge: 'ADMIN',     maxChats: -1,  maxAIs: -1, docs: true,  images: -1, audio: true,  video: true,  vision: true,  priority: true,  fastModel: true  }
 };
 
 const ADMIN_CODE = '3cu';
@@ -405,6 +405,7 @@ function canUseFeature(feature) {
     if (feature === 'docs') return plan.docs;
     if (feature === 'audio') return plan.audio;
     if (feature === 'video') return plan.video;
+    if (feature === 'vision') return plan.vision;
     if (feature === 'images') return plan.images !== 0;
     return true;
 }
@@ -425,7 +426,9 @@ function openPlansModal() {
             plan.images === -1 ? '∞ Imágenes' : plan.images > 0 ? `${plan.images} Imágenes/día` : '❌ Imágenes',
             plan.audio ? '✅ Música' : '❌ Música',
             plan.video ? '✅ Video' : '❌ Video',
-            plan.priority ? '✅ Prioridad' : '',
+            plan.vision ? '✅ Análisis de imágenes' : '❌ Análisis de imágenes',
+            plan.fastModel ? '✅ Modelos rápidos' : '',
+            plan.priority ? '✅ Respuesta prioritaria' : '',
         ].filter(Boolean);
 
         html += `<div class="plan-card ${isCurrent ? 'plan-current' : ''}" style="border-color:${plan.color}40">
@@ -2706,6 +2709,11 @@ function setupDragDrop() {
 async function analyzeImage(imageBase64, fileName, question) {
     if (!APP.currentUser) return;
     if (APP.isGenerating) return;
+    if (!canUseFeature('vision')) {
+        showToast('Tu plan no incluye análisis de imágenes. Mejora tu plan.', 'error');
+        openPlansModal();
+        return;
+    }
     if (!APP.currentChatId) createNewChat();
 
     const chat = APP.chats[APP.currentChatId];
