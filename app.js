@@ -189,36 +189,60 @@ function backupToServer() {
                 memory: APP.memory
             };
         }
-        fetch('/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).catch(() => {});
+        fetch('/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+            .then(r => r.json())
+            .then(resp => {
+                if (resp.totalUsers) {
+                    fetch('/api/backup').then(r => r.json()).then(serverData => {
+                        if (serverData.users) syncFromServer(serverData);
+                    }).catch(() => {});
+                }
+            })
+            .catch(() => {});
     } catch {}
+}
+
+function syncFromServer(serverData) {
+    if (!serverData.users) return;
+    const localUsers = getUsers();
+    let changed = false;
+    for (const [username, userData] of Object.entries(serverData.users)) {
+        if (!localUsers[username]) {
+            localUsers[username] = userData;
+            changed = true;
+        }
+    }
+    if (changed) {
+        localStorage.setItem('pytron_users', JSON.stringify(localUsers));
+    }
+    if (serverData.licenses) {
+        const localLic = JSON.parse(localStorage.getItem('pytron_licenses') || '{}');
+        let licChanged = false;
+        for (const [u, lic] of Object.entries(serverData.licenses)) {
+            if (!localLic[u] || (lic.grantedAt && lic.grantedAt > (localLic[u].grantedAt || 0))) {
+                localLic[u] = lic;
+                licChanged = true;
+            }
+        }
+        if (licChanged) localStorage.setItem('pytron_licenses', JSON.stringify(localLic));
+    }
 }
 
 async function restoreFromServer() {
     try {
+        const localUsers = getUsers();
+        if (Object.keys(localUsers).length > 0) {
+            await fetch('/api/backup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ users: localUsers, licenses: JSON.parse(localStorage.getItem('pytron_licenses') || '{}') })
+            });
+        }
         const res = await fetch('/api/backup');
         const data = await res.json();
         if (!data || !data.users) return false;
-        const localUsers = getUsers();
-        let changed = false;
-        for (const [username, userData] of Object.entries(data.users)) {
-            if (!localUsers[username]) {
-                localUsers[username] = userData;
-                changed = true;
-            }
-        }
-        if (changed) {
-            localStorage.setItem('pytron_users', JSON.stringify(localUsers));
-            if (data.licenses) {
-                const localLic = JSON.parse(localStorage.getItem('pytron_licenses') || '{}');
-                for (const [u, lic] of Object.entries(data.licenses)) {
-                    if (!localLic[u]) localLic[u] = lic;
-                }
-                localStorage.setItem('pytron_licenses', JSON.stringify(localLic));
-            }
-            console.log('[RESTORE] Cuentas sincronizadas desde respaldo del servidor');
-            return true;
-        }
-        return false;
+        syncFromServer(data);
+        return Object.keys(data.users).length > 0;
     } catch { return false; }
 }
 
