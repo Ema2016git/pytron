@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    { "source": "/api/chat", "destination": "/api/chat" },
+    { "source": "/api/image", "destination": "/api/image" },
+    { "source": "/api/audio", "destination": "/api/audio" },
+    { "source": "/api/vision", "destination": "/api/vision" },
+    { "source": "/api/video", "destination": "/api/video" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
+      ]
+    }
+  ],
+  "functions": {
+    "api/video.js": { "maxDuration": 300 },
+    "api/audio.js": { "maxDuration": 120 },
+    "api/vision.js": { "maxDuration": 60 }
+  }
+}
