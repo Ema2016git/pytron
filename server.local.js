@@ -703,6 +703,47 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // Backup/restore user data (persists across browser clears)
+    if (req.url === '/api/backup' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', () => {
+            try {
+                const data = JSON.parse(body);
+                const backupFile = path.join(__dirname, 'pytron_data.json');
+                let existing = {};
+                try { existing = JSON.parse(fs.readFileSync(backupFile, 'utf8')); } catch {}
+                if (data.users) existing.users = data.users;
+                if (data.licenses) existing.licenses = data.licenses;
+                if (data.username && data.userData) {
+                    if (!existing.userData) existing.userData = {};
+                    existing.userData[data.username] = data.userData;
+                }
+                existing.lastBackup = new Date().toISOString();
+                fs.writeFileSync(backupFile, JSON.stringify(existing, null, 2));
+                res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+                res.end(JSON.stringify({ ok: true }));
+            } catch (e) {
+                res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+                res.end(JSON.stringify({ error: e.message }));
+            }
+        });
+        return;
+    }
+
+    if (req.url === '/api/backup' && req.method === 'GET') {
+        const backupFile = path.join(__dirname, 'pytron_data.json');
+        try {
+            const data = fs.readFileSync(backupFile, 'utf8');
+            res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.end(data);
+        } catch {
+            res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+            res.end('{}');
+        }
+        return;
+    }
+
     // Serve static files
     let urlPath = req.url.split('?')[0];
     let filePath = urlPath === '/' ? '/index.html' : urlPath;

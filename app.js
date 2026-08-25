@@ -199,17 +199,30 @@ async function restoreFromServer() {
         const data = await res.json();
         if (!data || !data.users) return false;
         const localUsers = getUsers();
-        if (Object.keys(localUsers).length === 0 && Object.keys(data.users).length > 0) {
-            localStorage.setItem('pytron_users', JSON.stringify(data.users));
-            if (data.licenses) localStorage.setItem('pytron_licenses', JSON.stringify(data.licenses));
-            console.log('[RESTORE] Cuentas restauradas desde respaldo del servidor');
+        let changed = false;
+        for (const [username, userData] of Object.entries(data.users)) {
+            if (!localUsers[username]) {
+                localUsers[username] = userData;
+                changed = true;
+            }
+        }
+        if (changed) {
+            localStorage.setItem('pytron_users', JSON.stringify(localUsers));
+            if (data.licenses) {
+                const localLic = JSON.parse(localStorage.getItem('pytron_licenses') || '{}');
+                for (const [u, lic] of Object.entries(data.licenses)) {
+                    if (!localLic[u]) localLic[u] = lic;
+                }
+                localStorage.setItem('pytron_licenses', JSON.stringify(localLic));
+            }
+            console.log('[RESTORE] Cuentas sincronizadas desde respaldo del servidor');
             return true;
         }
         return false;
     } catch { return false; }
 }
 
-function handleLogin() {
+async function handleLogin() {
     const username = document.getElementById('loginUsername').value.trim().toLowerCase();
     const password = document.getElementById('loginPassword').value;
     const errorEl = document.getElementById('loginError');
@@ -220,7 +233,24 @@ function handleLogin() {
         return;
     }
 
-    const users = getUsers();
+    let users = getUsers();
+
+    if (!users[username]) {
+        try {
+            const res = await fetch('/api/backup');
+            const backup = await res.json();
+            if (backup.users && backup.users[username]) {
+                users[username] = backup.users[username];
+                localStorage.setItem('pytron_users', JSON.stringify(users));
+                if (backup.licenses) {
+                    const localLic = JSON.parse(localStorage.getItem('pytron_licenses') || '{}');
+                    if (backup.licenses[username]) localLic[username] = backup.licenses[username];
+                    localStorage.setItem('pytron_licenses', JSON.stringify(localLic));
+                }
+            }
+        } catch {}
+    }
+
     if (!users[username]) {
         errorEl.textContent = 'El usuario no existe. ¿Quieres crear una cuenta?';
         errorEl.classList.remove('hidden');
