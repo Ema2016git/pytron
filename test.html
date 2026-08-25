@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Pytron - Test</title>
+    <style>
+        body { background: #0a0a1a; color: white; font-family: Arial, sans-serif; padding: 40px; }
+        h1 { color: #6C63FF; }
+        .test { margin: 15px 0; padding: 15px; background: #1a1a2e; border-radius: 8px; }
+        .ok { border-left: 4px solid #2ed573; }
+        .err { border-left: 4px solid #ff4444; }
+        .wait { border-left: 4px solid #ffa502; }
+        button { background: #6C63FF; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        button:hover { background: #5a52d5; }
+        textarea { width: 100%; background: #1a1a2e; color: white; border: 1px solid #333; border-radius: 8px; padding: 12px; font-size: 14px; margin: 10px 0; }
+        #result { white-space: pre-wrap; max-height: 300px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>Pytron - Página de Diagnóstico</h1>
+    <p>Esta página prueba que todo funcione correctamente.</p>
+    
+    <div id="tests"></div>
+    
+    <h2>Prueba manual de chat</h2>
+    <textarea id="msg" rows="2" placeholder="Escribe un mensaje...">Hola, ¿cómo estás?</textarea>
+    <br>
+    <button onclick="testChat()">Enviar mensaje de prueba</button>
+    <button onclick="testImage()">Generar imagen de prueba</button>
+    <div id="result" class="test wait" style="display:none"></div>
+
+    <script>
+    const tests = document.getElementById('tests');
+    
+    function addTest(name, status, detail) {
+        const div = document.createElement('div');
+        div.className = 'test ' + status;
+        div.innerHTML = '<strong>' + name + ':</strong> ' + detail;
+        tests.appendChild(div);
+        return div;
+    }
+
+    // Test 1: Protocol
+    if (window.location.protocol === 'file:') {
+        addTest('Protocolo', 'err', 'Estás abriendo el archivo directamente. Debes abrir <b>http://localhost:3000/test.html</b>');
+    } else {
+        addTest('Protocolo', 'ok', window.location.href);
+    }
+
+    // Test 2: Check if server responds
+    fetch('/api/chat', { method: 'OPTIONS' })
+        .then(r => addTest('Servidor', 'ok', 'Conectado (status ' + r.status + ')'))
+        .catch(e => addTest('Servidor', 'err', 'No se puede conectar: ' + e.message));
+
+    // Test 3: Check if app.js loads
+    const script = document.createElement('script');
+    script.src = 'app.js';
+    script.onload = () => {
+        addTest('app.js', 'ok', 'Cargado correctamente');
+        
+        // Test 4: Check critical functions
+        const fns = ['sendMessage', 'handleInputChange', 'generateResponse', 'createNewChat'];
+        fns.forEach(fn => {
+            if (typeof window[fn] === 'function') {
+                addTest('Función ' + fn, 'ok', 'Existe');
+            } else {
+                addTest('Función ' + fn, 'err', 'NO existe - hay un error en app.js');
+            }
+        });
+
+        // Test 5: Check APP state
+        if (typeof APP !== 'undefined') {
+            addTest('APP state', 'ok', 'isGenerating=' + APP.isGenerating + ', currentUser=' + (APP.currentUser ? APP.currentUser.username : 'null'));
+        } else {
+            addTest('APP state', 'err', 'APP no está definido');
+        }
+    };
+    script.onerror = (e) => {
+        addTest('app.js', 'err', 'Error al cargar app.js: ' + e);
+    };
+    document.body.appendChild(script);
+
+    // Test 6: Check CDN libraries
+    fetch('https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js')
+        .then(r => addTest('CDN marked.js', r.ok ? 'ok' : 'err', 'Status: ' + r.status))
+        .catch(e => addTest('CDN marked.js', 'err', 'No se puede cargar: ' + e.message));
+
+    fetch('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js')
+        .then(r => addTest('CDN highlight.js', r.ok ? 'ok' : 'err', 'Status: ' + r.status))
+        .catch(e => addTest('CDN highlight.js', 'err', 'No se puede cargar: ' + e.message));
+
+    async function testChat() {
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'test wait';
+        resultDiv.textContent = 'Enviando...';
+        
+        try {
+            const msg = document.getElementById('msg').value;
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + (prompt('HF API Key:') || '')
+                },
+                body: JSON.stringify({
+                    model: 'Qwen/Qwen2.5-72B-Instruct',
+                    messages: [{ role: 'user', content: msg }],
+                    max_tokens: 100
+                })
+            });
+            
+            const data = await response.text();
+            resultDiv.className = 'test ' + (response.ok ? 'ok' : 'err');
+            resultDiv.textContent = 'Status: ' + response.status + '\n\n' + data;
+        } catch (e) {
+            resultDiv.className = 'test err';
+            resultDiv.textContent = 'Error: ' + e.message;
+        }
+    }
+
+    async function testImage() {
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'test wait';
+        resultDiv.textContent = 'Generando imagen (puede tardar 15-20 segundos)...';
+        
+        try {
+            const response = await fetch('/api/image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + (prompt('HF API Key:') || '')
+                },
+                body: JSON.stringify({
+                    prompt: 'a cute cat',
+                    model: 'stabilityai/stable-diffusion-3-medium-diffusers'
+                })
+            });
+            
+            const data = await response.json();
+            if (data.image) {
+                resultDiv.className = 'test ok';
+                resultDiv.innerHTML = 'Imagen generada!<br><img src="' + data.image + '" style="max-width:300px;border-radius:8px;margin-top:10px">';
+            } else {
+                resultDiv.className = 'test err';
+                resultDiv.textContent = 'Error: ' + (data.error || 'Sin imagen');
+            }
+        } catch (e) {
+            resultDiv.className = 'test err';
+            resultDiv.textContent = 'Error: ' + e.message;
+        }
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pytron — Asistente Inteligente</title>
+    <link rel="stylesheet" href="styles.css?v=11">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+</head>
+<body>
+    <!-- Auth Screen -->
+    <div class="auth-screen" id="authScreen">
+        <div class="auth-container">
+            <div class="auth-logo">
+                <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+                    <circle cx="32" cy="32" r="30" stroke="url(#gradAuth)" stroke-width="3"/>
+                    <path d="M20 32L28 40L44 24" stroke="url(#gradAuth)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs>
+                        <linearGradient id="gradAuth" x1="0" y1="0" x2="64" y2="64">
+                            <stop offset="0%" stop-color="#6C63FF"/>
+                            <stop offset="50%" stop-color="#00D2FF"/>
+                            <stop offset="100%" stop-color="#6C63FF"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1 class="auth-title">Pytron</h1>
+                <p class="auth-subtitle">Tu asistente de IA personal</p>
+            </div>
+
+            <!-- Login Form -->
+            <div class="auth-form" id="loginForm">
+                <h2>Iniciar sesión</h2>
+                <div class="auth-field">
+                    <label>Usuario</label>
+                    <input type="text" id="loginUsername" placeholder="Tu nombre de usuario" autocomplete="username">
+                </div>
+                <div class="auth-field">
+                    <label>Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="Tu contraseña" autocomplete="current-password">
+                </div>
+                <p class="auth-error hidden" id="loginError"></p>
+                <button class="btn-primary auth-btn" id="loginBtn">Entrar</button>
+                <p class="auth-switch">¿No tienes cuenta? <button id="showRegister">Crear cuenta</button></p>
+            </div>
+
+            <!-- Register Form -->
+            <div class="auth-form hidden" id="registerForm">
+                <h2>Crear cuenta</h2>
+                <div class="auth-field">
+                    <label>Nombre</label>
+                    <input type="text" id="regName" placeholder="¿Cómo te llamas?">
+                </div>
+                <div class="auth-field">
+                    <label>Usuario</label>
+                    <input type="text" id="regUsername" placeholder="Elige un nombre de usuario">
+                </div>
+                <div class="auth-field">
+                    <label>Contraseña</label>
+                    <input type="password" id="regPassword" placeholder="Mínimo 4 caracteres">
+                </div>
+                <div class="auth-field">
+                    <label>Confirmar contraseña</label>
+                    <input type="password" id="regPassword2" placeholder="Repite la contraseña">
+                </div>
+                <p class="auth-error hidden" id="regError"></p>
+                <button class="btn-primary auth-btn" id="registerBtn">Crear cuenta</button>
+                <p class="auth-switch">¿Ya tienes cuenta? <button id="showLogin">Iniciar sesión</button></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Container (hidden until login) -->
+    <div class="app-container hidden" id="appContainer">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                        <circle cx="14" cy="14" r="13" stroke="url(#grad1)" stroke-width="2"/>
+                        <path d="M9 14L12.5 17.5L19 11" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="grad1" x1="0" y1="0" x2="28" y2="28">
+                                <stop offset="0%" stop-color="#6C63FF"/>
+                                <stop offset="100%" stop-color="#00D2FF"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span class="logo-text">Pytron</span>
+                </div>
+                <button class="btn-icon" id="closeSidebar" title="Cerrar sidebar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+            </div>
+
+            <button class="new-chat-btn" id="newChatBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                Nueva conversación
+            </button>
+
+            <div class="search-container" id="searchContainer">
+                <div class="search-input-wrapper">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input type="text" id="searchInput" placeholder="Buscar en chats..." class="search-input">
+                    <button class="search-clear hidden" id="searchClear">&times;</button>
+                </div>
+            </div>
+
+            <div class="custom-ais-section" id="customAIsSection">
+                <div class="custom-ais-header">
+                    <span class="history-label">Mis IAs</span>
+                    <button class="btn-icon btn-add-ai" id="importAIBtn" title="Importar IA con código" onclick="openImportAI()" style="margin-right:2px">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </button>
+                    <button class="btn-icon btn-add-ai" id="createAIBtn" title="Crear nueva IA">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    </button>
+                </div>
+                <div class="custom-ais-list" id="customAIsList"></div>
+            </div>
+
+            <div class="folders-section" id="foldersSection">
+                <div class="folders-header">
+                    <span class="history-label">Carpetas</span>
+                </div>
+                <div class="folders-list" id="foldersList"></div>
+            </div>
+
+            <div class="chat-history" id="chatHistory">
+                <div class="history-section">
+                    <span class="history-label">Hoy</span>
+                    <div id="todayChats"></div>
+                </div>
+                <div class="history-section">
+                    <span class="history-label">Anteriores</span>
+                    <div id="olderChats"></div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-profile" id="userProfile">
+                    <div class="user-avatar" id="userAvatar">E</div>
+                    <div class="user-profile-info">
+                        <span class="user-name" id="userName">Usuario</span>
+                        <span id="planBadge"></span>
+                    </div>
+                    <button class="btn-icon" id="logoutBtn" title="Cerrar sesión">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </button>
+                </div>
+                <button class="sidebar-footer-btn" id="driveBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M7.71 3.5L1.15 15l4.58 6.5h6.14L5.31 10 7.71 3.5z" fill="#0066DA"/>
+                        <path d="M16.29 3.5H7.71l6.56 12h8.58L16.29 3.5z" fill="#00AC47"/>
+                        <path d="M1.15 15l4.58 6.5h12.54l4.58-6.5H14.27L7.71 15H1.15z" fill="#FFBA00"/>
+                    </svg>
+                    Google Drive
+                </button>
+                <button class="sidebar-footer-btn" id="settingsBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                    Configuración
+                </button>
+                <button class="sidebar-footer-btn" onclick="openPlansModal()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    Planes
+                </button>
+                <button class="sidebar-footer-btn" id="clearAllBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    Borrar todo
+                </button>
+                <button class="sidebar-footer-btn" onclick="openAdminPanel()" style="opacity:0.5;font-size:11px">
+                    🔐 Admin
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <header class="top-bar">
+                <button class="btn-icon" id="openSidebar" title="Abrir sidebar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                </button>
+                <div class="model-selector" id="modelSelector">
+                    <button class="model-selector-btn" id="modelSelectorBtn">
+                        <span class="model-name" id="currentModelName">Llama 3.1 8B</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="model-dropdown" id="modelDropdown">
+                        <div class="model-dropdown-header">Seleccionar modelo</div>
+                        <div class="model-option selected" data-provider="huggingface" data-model="Qwen/Qwen2.5-72B-Instruct">
+                            <div class="model-option-icon huggingface">🤗</div>
+                            <div class="model-option-info">
+                                <span class="model-option-name">Qwen 2.5 72B</span>
+                                <span class="model-option-desc">Alibaba — Potente y multilingüe</span>
+                            </div>
+                            <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                        </div>
+                        <div class="model-option" data-provider="huggingface" data-model="meta-llama/Llama-3.3-70B-Instruct">
+                            <div class="model-option-icon huggingface">🦙</div>
+                            <div class="model-option-info">
+                                <span class="model-option-name">Llama 3.3 70B</span>
+                                <span class="model-option-desc">Meta — Muy capaz</span>
+                            </div>
+                            <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                        </div>
+                        <div class="model-option" data-provider="huggingface" data-model="Qwen/Qwen2.5-Coder-32B-Instruct">
+                            <div class="model-option-icon huggingface">💻</div>
+                            <div class="model-option-info">
+                                <span class="model-option-name">Qwen 2.5 Coder 32B</span>
+                                <span class="model-option-desc">Alibaba — Especialista en código</span>
+                            </div>
+                            <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                        </div>
+                        <div class="model-option" data-provider="huggingface" data-model="google/gemma-3-27b-it">
+                            <div class="model-option-icon huggingface">💎</div>
+                            <div class="model-option-info">
+                                <span class="model-option-name">Gemma 3 27B</span>
+                                <span class="model-option-desc">Google — Rápido y preciso</span>
+                            </div>
+                            <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                        </div>
+                        <div class="model-option" data-provider="huggingface" data-model="Qwen/Qwen3-32B">
+                            <div class="model-option-icon huggingface">🧠</div>
+                            <div class="model-option-info">
+                                <span class="model-option-name">Qwen 3 32B</span>
+                                <span class="model-option-desc">Alibaba — Razonamiento avanzado</span>
+                            </div>
+                            <svg class="check-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div id="activeAIBadge"></div>
+                <button class="theme-toggle-btn" id="themeToggle" title="Cambiar tema" onclick="toggleTheme()">
+                    <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                </button>
+                <div class="top-bar-spacer"></div>
+            </header>
+
+            <div class="chat-area" id="chatArea">
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-logo">
+                        <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                            <circle cx="32" cy="32" r="30" stroke="url(#grad2)" stroke-width="3"/>
+                            <path d="M20 32L28 40L44 24" stroke="url(#grad2)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            <defs><linearGradient id="grad2" x1="0" y1="0" x2="64" y2="64"><stop offset="0%" stop-color="#6C63FF"/><stop offset="50%" stop-color="#00D2FF"/><stop offset="100%" stop-color="#6C63FF"/></linearGradient></defs>
+                        </svg>
+                    </div>
+                    <h1 class="welcome-title" id="welcomeTitle">¿En qué puedo ayudarte?</h1>
+                    <p class="welcome-subtitle">Soy Pytron, tu asistente inteligente. Puedo ayudarte con código, escritura, análisis, matemáticas y mucho más.</p>
+                    <div class="suggestions">
+                        <button class="suggestion-card" data-prompt="Explícame la computación cuántica de forma sencilla">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                            <span>Explícame la computación cuántica de forma sencilla</span>
+                        </button>
+                        <button class="suggestion-card" data-prompt="Escribe un programa en Python que genere contraseñas seguras">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                            <span>Escribe un programa en Python que genere contraseñas seguras</span>
+                        </button>
+                        <button class="suggestion-card" data-prompt="Ayúdame a redactar un correo profesional para solicitar un aumento">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                            <span>Ayúdame a redactar un correo profesional</span>
+                        </button>
+                        <button class="suggestion-card" data-prompt="¿Cuáles son las mejores prácticas de seguridad en desarrollo web?">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            <span>Mejores prácticas de seguridad web</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="messages-container" id="messagesContainer"></div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea id="messageInput" placeholder="Escribe tu mensaje..." rows="1" autofocus
+                            oninput="if(typeof handleInputChange==='function')handleInputChange()"
+                            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();if(typeof sendMessage==='function')sendMessage()}"></textarea>
+                        <div class="input-actions">
+                            <button class="vision-btn" id="visionBtn" title="Analizar imagen" onclick="var f=document.getElementById('visionFileInput');if(f)f.click()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                            <button class="audio-btn" id="audioBtn" title="Generar música" onclick="if(typeof generateAudio==='function'){var p=prompt('Describe la música (ej: happy guitar melody, electronic beat):');if(p)generateAudio(p)}">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                            </button>
+                            <button class="video-btn" id="videoBtn" title="Generar video" onclick="if(typeof openVideoPrompt==='function')openVideoPrompt()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                            </button>
+                            <button class="image-btn" id="imageBtn" title="Generar imagen" onclick="if(typeof openImagePrompt==='function')openImagePrompt()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                            </button>
+                            <button class="send-btn" id="sendBtn" title="Enviar mensaje" onclick="if(typeof sendMessage==='function')sendMessage()">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            </button>
+                            <button class="stop-btn hidden" id="stopBtn" title="Detener generación">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="input-disclaimer">Pytron puede cometer errores. Verifica la información importante.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay hidden" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Configuración</h2>
+                <button class="btn-icon" id="closeSettings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h3>🧠 Memoria</h3>
+                    <p class="settings-hint">Pytron recordará esto en todas tus conversaciones. Escribe datos sobre ti, tus preferencias, tu trabajo, etc.</p>
+                    <div class="setting-row">
+                        <textarea id="userMemory" class="memory-input" placeholder="Ej: Me llamo Edgar. Juego baseball. Soy programador. Me gusta Python. Estudio en la universidad..." rows="5"></textarea>
+                    </div>
+                    <div class="memory-counter"><span id="memoryCount">0</span> / 1000 caracteres</div>
+                </div>
+                <div class="settings-section">
+                    <h3>Personalización</h3>
+                    <div class="setting-row">
+                        <label>Instrucciones del sistema</label>
+                        <textarea id="systemPrompt" class="system-prompt-input" placeholder="Ej: Eres un experto en programación. Responde siempre en español..." rows="3"></textarea>
+                    </div>
+                    <div class="setting-row">
+                        <label>Temperatura</label>
+                        <div class="range-wrapper">
+                            <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
+                            <span id="tempValue">0.7</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelSettings">Cancelar</button>
+                <button class="btn-primary" id="saveSettings">Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit AI Modal -->
+    <div class="modal-overlay hidden" id="aiModal">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 id="aiModalTitle">Crear nueva IA</h2>
+                <button class="btn-icon" id="closeAIModal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="ai-form-grid">
+                    <div class="ai-form-left">
+                        <div class="ai-avatar-picker">
+                            <div class="ai-avatar-preview" id="aiAvatarPreview">
+                                <span id="aiAvatarEmoji">🤖</span>
+                            </div>
+                            <div class="ai-avatar-options" id="aiAvatarOptions">
+                                <button class="emoji-option selected" data-emoji="🤖">🤖</button>
+                                <button class="emoji-option" data-emoji="🧠">🧠</button>
+                                <button class="emoji-option" data-emoji="💡">💡</button>
+                                <button class="emoji-option" data-emoji="🎨">🎨</button>
+                                <button class="emoji-option" data-emoji="📝">📝</button>
+                                <button class="emoji-option" data-emoji="💻">💻</button>
+                                <button class="emoji-option" data-emoji="🔬">🔬</button>
+                                <button class="emoji-option" data-emoji="📊">📊</button>
+                                <button class="emoji-option" data-emoji="🎵">🎵</button>
+                                <button class="emoji-option" data-emoji="🌍">🌍</button>
+                                <button class="emoji-option" data-emoji="⚡">⚡</button>
+                                <button class="emoji-option" data-emoji="🔥">🔥</button>
+                                <button class="emoji-option" data-emoji="🎯">🎯</button>
+                                <button class="emoji-option" data-emoji="🛡️">🛡️</button>
+                                <button class="emoji-option" data-emoji="📚">📚</button>
+                                <button class="emoji-option" data-emoji="✍️">✍️</button>
+                                <button class="emoji-option" data-emoji="🏋️">🏋️</button>
+                                <button class="emoji-option" data-emoji="👨‍🍳">👨‍🍳</button>
+                                <button class="emoji-option" data-emoji="👨‍⚕️">👨‍⚕️</button>
+                                <button class="emoji-option" data-emoji="👨‍🏫">👨‍🏫</button>
+                            </div>
+                        </div>
+                        <div class="ai-color-picker">
+                            <label>Color</label>
+                            <div class="color-options" id="aiColorOptions">
+                                <button class="color-option selected" data-color="#6C63FF" style="background:#6C63FF"></button>
+                                <button class="color-option" data-color="#00D2FF" style="background:#00D2FF"></button>
+                                <button class="color-option" data-color="#FF6B6B" style="background:#FF6B6B"></button>
+                                <button class="color-option" data-color="#2ed573" style="background:#2ed573"></button>
+                                <button class="color-option" data-color="#ffa502" style="background:#ffa502"></button>
+                                <button class="color-option" data-color="#ff6348" style="background:#ff6348"></button>
+                                <button class="color-option" data-color="#a29bfe" style="background:#a29bfe"></button>
+                                <button class="color-option" data-color="#fd79a8" style="background:#fd79a8"></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ai-form-right">
+                        <div class="setting-row">
+                            <label>Nombre de la IA *</label>
+                            <input type="text" id="aiName" class="text-input" placeholder="Ej: CodeMaster, Chef Mario, Tutor de Física...">
+                        </div>
+                        <div class="setting-row">
+                            <label>Descripción corta</label>
+                            <input type="text" id="aiDescription" class="text-input" placeholder="Ej: Experto en programación Python y JavaScript">
+                        </div>
+                        <div class="setting-row">
+                            <label>Modelo preferido</label>
+                            <select id="aiModel" class="select-input">
+                                <option value="auto">Automático (usa el seleccionado)</option>
+                                <option value="huggingface:Qwen/Qwen2.5-72B-Instruct">Qwen 2.5 72B — Potente</option>
+                                <option value="huggingface:meta-llama/Llama-3.3-70B-Instruct">Llama 3.3 70B — Meta</option>
+                                <option value="huggingface:Qwen/Qwen2.5-Coder-32B-Instruct">Qwen Coder 32B — Código</option>
+                                <option value="huggingface:google/gemma-3-27b-it">Gemma 3 27B — Google</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <label>Instrucciones de la IA (System Prompt) *</label>
+                            <textarea id="aiSystemPrompt" class="system-prompt-input" rows="6" placeholder="Describe cómo debe comportarse tu IA. Ej:&#10;&#10;Eres un chef profesional con 20 años de experiencia. Responde siempre con recetas detalladas, incluyendo ingredientes, pasos de preparación y consejos."></textarea>
+                        </div>
+                        <div class="setting-row">
+                            <label>Mensaje de bienvenida</label>
+                            <input type="text" id="aiWelcomeMsg" class="text-input" placeholder="Ej: ¡Hola! Soy tu chef personal. ¿Qué quieres cocinar hoy?">
+                        </div>
+                        <div class="setting-row">
+                            <label>Temperatura</label>
+                            <div class="range-wrapper">
+                                <input type="range" id="aiTemperature" min="0" max="2" step="0.1" value="0.7">
+                                <span id="aiTempValue">0.7</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ai-templates">
+                    <label>O empieza desde una plantilla:</label>
+                    <div class="templates-grid">
+                        <button class="template-card" data-template="coder"><span class="template-emoji">💻</span><span class="template-name">Programador</span></button>
+                        <button class="template-card" data-template="writer"><span class="template-emoji">✍️</span><span class="template-name">Escritor</span></button>
+                        <button class="template-card" data-template="tutor"><span class="template-emoji">👨‍🏫</span><span class="template-name">Tutor</span></button>
+                        <button class="template-card" data-template="chef"><span class="template-emoji">👨‍🍳</span><span class="template-name">Chef</span></button>
+                        <button class="template-card" data-template="fitness"><span class="template-emoji">🏋️</span><span class="template-name">Fitness</span></button>
+                        <button class="template-card" data-template="analyst"><span class="template-emoji">📊</span><span class="template-name">Analista</span></button>
+                        <button class="template-card" data-template="translator"><span class="template-emoji">🌍</span><span class="template-name">Traductor</span></button>
+                        <button class="template-card" data-template="creative"><span class="template-emoji">🎨</span><span class="template-name">Creativo</span></button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-danger hidden" id="deleteAIBtn">Eliminar IA</button>
+                <div class="modal-footer-spacer"></div>
+                <button class="btn-secondary" id="cancelAIModal">Cancelar</button>
+                <button class="btn-primary" id="saveAIBtn">Crear IA</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Drive Modal -->
+    <div class="modal-overlay hidden" id="driveModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Google Drive</h2>
+                <button class="btn-icon" id="closeDriveModal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="drive-intro">
+                    <div class="drive-icon-large">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                            <path d="M7.71 3.5L1.15 15l4.58 6.5h6.14L5.31 10 7.71 3.5z" fill="#0066DA"/>
+                            <path d="M16.29 3.5H7.71l6.56 12h8.58L16.29 3.5z" fill="#00AC47"/>
+                            <path d="M1.15 15l4.58 6.5h12.54l4.58-6.5H14.27L7.71 15H1.15z" fill="#FFBA00"/>
+                        </svg>
+                    </div>
+                    <p class="drive-connect-text">Descarga tus conversaciones y guárdalas en Google Drive, o restaura un respaldo anterior.</p>
+                </div>
+
+                <div class="drive-actions" id="driveActions">
+                    <h3>Exportar</h3>
+                    <div class="drive-actions-grid">
+                        <button class="drive-action-card" id="driveExportChat">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            <span class="drive-action-title">Exportar chat actual</span>
+                            <span class="drive-action-desc">Descarga la conversación actual como .txt</span>
+                        </button>
+                        <button class="drive-action-card" id="driveExportAllTxt">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+                            <span class="drive-action-title">Exportar todo como texto</span>
+                            <span class="drive-action-desc">Todas las conversaciones en un .txt</span>
+                        </button>
+                        <button class="drive-action-card" id="driveBackupAll">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <span class="drive-action-title">Respaldar todo (JSON)</span>
+                            <span class="drive-action-desc">Descarga un respaldo completo restaurable</span>
+                        </button>
+                        <button class="drive-action-card" id="driveRestoreBackup">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <span class="drive-action-title">Restaurar respaldo</span>
+                            <span class="drive-action-desc">Sube un archivo .json para restaurar</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="drive-tip">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                    <span>Guarda los archivos descargados en tu carpeta de Google Drive para que se sincronicen automáticamente.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Share AI Modal -->
+    <div class="modal-overlay hidden" id="shareModal">
+        <div class="modal" style="max-width:500px">
+            <div class="modal-header">
+                <h2>Compartir IA</h2>
+                <button class="btn-icon" onclick="closeShareModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align:center;margin-bottom:16px">
+                    <span id="shareAIName" style="font-size:20px;font-weight:600"></span>
+                </div>
+                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:12px">Copia este código y compártelo. Cualquier persona con Pytron puede importar tu IA pegándolo.</p>
+                <div class="share-code-container">
+                    <textarea id="shareCode" readonly class="share-code-input" rows="4"></textarea>
+                    <button class="btn-primary" onclick="copyShareCode()" style="width:100%;margin-top:8px">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:6px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        Copiar código
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drag & Drop Overlay -->
+    <div class="drag-overlay" id="dragOverlay">
+        <div class="drag-overlay-content">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p>Suelta la imagen aquí</p>
+            <span>Pytron la analizará con IA</span>
+        </div>
+    </div>
+    <input type="file" id="restoreFileInput" accept=".json" class="hidden">
+    <input type="file" id="visionFileInput" accept="image/*" class="hidden">
+
+    <script>
+    window.onerror = function(msg, url, line) {
+        var d = document.createElement('div');
+        d.style.cssText = 'position:fixed;bottom:10px;left:10px;right:10px;background:#ff4444;color:white;padding:12px;border-radius:8px;z-index:99999;font-family:monospace;font-size:13px';
+        d.textContent = 'ERROR JS: ' + msg + ' (línea ' + line + ')';
+        document.body.appendChild(d);
+        setTimeout(function(){ d.remove(); }, 10000);
+    };
+    </script>
+    <!-- Plans Modal -->
+    <div class="modal-overlay hidden" id="plansModal">
+        <div class="modal plans-modal">
+            <div class="modal-header">
+                <h2>Planes de Pytron</h2>
+                <button class="modal-close" onclick="closePlansModal()">&times;</button>
+            </div>
+            <div id="plansContent"></div>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal-overlay hidden" id="adminModal">
+        <div class="modal admin-modal">
+            <div class="modal-header">
+                <h2>🔐 Panel de Administrador</h2>
+                <button class="modal-close" onclick="closeAdminModal()">&times;</button>
+            </div>
+            <div id="adminContent"></div>
+        </div>
+    </div>
+
+    <script src="config.js" onerror=""></script>
+    <script src="app.js?v=19"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "users": {
+    "3333": {
+      "name": "3",
+      "username": "3333",
+      "password": "MzMzMw==",
+      "createdAt": 1787608864853
+    }
+  },
+  "licenses": {
+    "3333": {
+      "plan": "admin",
+      "grantedAt": 1787692412650,
+      "expiresAt": 0,
+      "grantedBy": "system"
+    }
+  },
+  "userData": {
+    "3333": {
+      "chats": {},
+      "customAIs": {
+        "ai_1787688534942": {
+          "id": "ai_1787688534942",
+          "name": "Maestra Anais",
+          "description": "Resume textos cortos de Olena en reportes largos y los formatea en Word.",
+          "emoji": "🤖",
+          "color": "#F7DC6F",
+          "systemPrompt": "Actúa como Anais, una maestra que crea reportes detallados a partir de textos cortos proporcionados por Olena. Formatea los reportes en documentos de Word y mantén un tono profesional y amigable en tus respuestas.",
+          "welcomeMsg": "¡Hola, Olena! Estoy lista para ayudarte a crear tus reportes. Por favor, comparte el texto que deseas resumir.",
+          "preferredModel": "auto",
+          "temperature": 0.7,
+          "createdAt": 1787688534942,
+          "updatedAt": 1787688534942
+        }
+      },
+      "settings": {
+        "systemPrompt": "",
+        "temperature": 2
+      },
+      "memory": "me llamo emanuel soy baseballlista y guitarrista"
+    }
+  },
+  "lastBackup": "2026-08-25T21:13:32.651Z"
+}
