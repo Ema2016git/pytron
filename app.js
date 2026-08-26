@@ -2120,6 +2120,9 @@ function appendMessage(type, content, animate = true, customAIId = null) {
             </button>
             <button class="reaction-btn" data-reaction="copy" title="Copiar respuesta" onclick="copyFullResponse(this)">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+            <button class="reaction-btn tts-btn" data-reaction="speak" title="Escuchar respuesta" onclick="speakResponse(this)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
             </button>`;
         contentDiv.appendChild(reactionsDiv);
     }
@@ -3102,6 +3105,39 @@ function copyFullResponse(btn) {
         setTimeout(() => btn.classList.remove('active'), 2000);
         showToast('Respuesta copiada', 'success');
     });
+}
+
+let currentTTSBtn = null;
+function speakResponse(btn) {
+    if (window.speechSynthesis.speaking && currentTTSBtn === btn) {
+        window.speechSynthesis.cancel();
+        btn.classList.remove('active');
+        currentTTSBtn = null;
+        return;
+    }
+    window.speechSynthesis.cancel();
+    if (currentTTSBtn) currentTTSBtn.classList.remove('active');
+
+    const content = btn.closest('.message-content');
+    const text = content.innerText.replace(/\n*$/, '').substring(0, 5000);
+    if (!text.trim()) return;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'es-MX';
+    utterance.rate = 1;
+    utterance.pitch = 1;
+
+    const voices = window.speechSynthesis.getVoices();
+    const esVoice = voices.find(v => v.lang.startsWith('es')) || voices[0];
+    if (esVoice) utterance.voice = esVoice;
+
+    btn.classList.add('active');
+    currentTTSBtn = btn;
+
+    utterance.onend = () => { btn.classList.remove('active'); currentTTSBtn = null; };
+    utterance.onerror = () => { btn.classList.remove('active'); currentTTSBtn = null; };
+
+    window.speechSynthesis.speak(utterance);
 }
 
 function showToast(msg, type = 'error') {

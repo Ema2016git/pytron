@@ -1328,6 +1328,18 @@ body {
     border-color: rgba(255, 71, 87, 0.3);
 }
 
+.message-reactions .tts-btn.active {
+    color: #00b894;
+    background: rgba(0, 184, 148, 0.15);
+    border-color: rgba(0, 184, 148, 0.3);
+    animation: tts-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes tts-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
 /* Generated Videos */
 .generated-video {
     max-width: 512px;
