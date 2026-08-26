@@ -42,7 +42,7 @@ async function saveStore(store) {
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(204).end();
@@ -56,9 +56,18 @@ module.exports = async (req, res) => {
         return res.status(200).json(store);
     }
 
+    if (req.method === 'DELETE') {
+        await saveStore({ users: {}, licenses: {}, userData: {} });
+        return res.status(200).json({ ok: true, cleared: true });
+    }
+
     if (req.method === 'POST') {
         try {
             const data = req.body || {};
+            if (data.clearAll === true) {
+                await saveStore({ users: {}, licenses: {}, userData: {} });
+                return res.status(200).json({ ok: true, cleared: true });
+            }
             const store = await getStore();
 
             if (data.users) {
