@@ -13,36 +13,45 @@ module.exports = async (req, res) => {
     }
 
     const parsed = req.body || {};
-    const prompt = encodeURIComponent(parsed.prompt || 'a cat');
-    const imageUrl = `https://image.pollinations.ai/prompt/${prompt}?width=768&height=768&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
+    const rawPrompt = parsed.prompt || 'a cat';
 
-    return new Promise((resolve) => {
-        function downloadImage(url) {
-            https.get(url, (imgRes) => {
-                if (imgRes.statusCode >= 300 && imgRes.statusCode < 400 && imgRes.headers.location) {
-                    downloadImage(imgRes.headers.location);
-                    return;
-                }
+    function tryGenerate(attempt) {
+        return new Promise((resolve) => {
+            const prompt = encodeURIComponent(rawPrompt);
+            const seed = Math.floor(Math.random() * 99999);
+            const imageUrl = `https://image.pollinations.ai/prompt/${prompt}?width=768&height=768&nologo=true&seed=${seed}`;
 
-                const chunks = [];
-                imgRes.on('data', chunk => chunks.push(chunk));
-                imgRes.on('end', () => {
-                    const buffer = Buffer.concat(chunks);
-                    if (imgRes.statusCode !== 200 || buffer.length < 1000) {
-                        res.status(500).json({ error: 'Error al generar imagen. Intenta de nuevo.' });
-                        resolve();
+            function downloadImage(url, redirects) {
+                if (redirects > 5) { resolve(null); return; }
+                https.get(url, (imgRes) => {
+                    if (imgRes.statusCode >= 300 && imgRes.statusCode < 400 && imgRes.headers.location) {
+                        downloadImage(imgRes.headers.location, redirects + 1);
                         return;
                     }
-                    const contentType = imgRes.headers['content-type'] || 'image/jpeg';
-                    res.status(200).json({ image: `data:${contentType};base64,${buffer.toString('base64')}` });
-                    resolve();
-                });
-            }).on('error', (err) => {
-                res.status(502).json({ error: 'No se pudo generar la imagen: ' + err.message });
-                resolve();
-            });
-        }
+                    const chunks = [];
+                    imgRes.on('data', chunk => chunks.push(chunk));
+                    imgRes.on('end', () => {
+                        const buffer = Buffer.concat(chunks);
+                        if (imgRes.statusCode !== 200 || buffer.length < 500) {
+                            resolve(null);
+                            return;
+                        }
+                        const contentType = imgRes.headers['content-type'] || 'image/jpeg';
+                        resolve({ image: `data:${contentType};base64,${buffer.toString('base64')}` });
+                    });
+                }).on('error', () => resolve(null));
+            }
 
-        downloadImage(imageUrl);
-    });
+            downloadImage(imageUrl, 0);
+        });
+    }
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+        const result = await tryGenerate(attempt);
+        if (result) {
+            return res.status(200).json(result);
+        }
+    }
+
+    return res.status(500).json({ error: 'No se pudo generar la imagen después de varios intentos. Intenta con otra descripción.' });
 };

@@ -13,6 +13,7 @@
   "functions": {
     "api/video.js": { "maxDuration": 300 },
     "api/audio.js": { "maxDuration": 120 },
-    "api/vision.js": { "maxDuration": 60 }
+    "api/vision.js": { "maxDuration": 60 },
+    "api/image.js": { "maxDuration": 120 }
   }
 }
