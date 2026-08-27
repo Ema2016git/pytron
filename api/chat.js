@@ -1,11 +1,6 @@
 const https = require('https');
 
-const MODEL_MAP = {
-    'Qwen/Qwen2.5-72B-Instruct': 'qwen3.5-plus',
-    'Qwen/Qwen2.5-Coder-32B-Instruct': 'qwen3-coder-plus',
-    'meta-llama/Llama-3.3-70B-Instruct': 'gemini-3-flash',
-    'mistralai/Mistral-Small-24B-Instruct-2501': 'gemini-3-flash',
-};
+const HF_TOKEN = process.env.HF_TOKEN || '';
 
 module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') {
@@ -20,19 +15,18 @@ module.exports = async (req, res) => {
     }
 
     const parsed = req.body || {};
-    const originalModel = parsed.model || 'Qwen/Qwen2.5-72B-Instruct';
-    parsed.model = MODEL_MAP[originalModel] || 'qwen3.5-plus';
+    if (!parsed.model) parsed.model = 'Qwen/Qwen2.5-72B-Instruct';
 
     const proxyBody = JSON.stringify(parsed);
 
     return new Promise((resolve) => {
         const options = {
-            hostname: 'gpt.crax.lol',
+            hostname: 'router.huggingface.co',
             path: '/v1/chat/completions',
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'User-Agent': 'Mozilla/5.0 Pytron/1.0'
+                'Authorization': `Bearer ${HF_TOKEN}`
             }
         };
 
@@ -41,6 +35,7 @@ module.exports = async (req, res) => {
                 let errBody = '';
                 proxyRes.on('data', c => errBody += c);
                 proxyRes.on('end', () => {
+                    console.log(`[CHAT] Error ${proxyRes.statusCode}:`, errBody.substring(0, 200));
                     res.status(proxyRes.statusCode).json({ error: { message: 'Error del servicio de IA. Intenta de nuevo.' } });
                     resolve();
                 });

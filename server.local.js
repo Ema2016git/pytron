@@ -42,25 +42,18 @@ const server = http.createServer((req, res) => {
             let parsed;
             try { parsed = JSON.parse(body); } catch { parsed = {}; }
 
-            const MODEL_MAP = {
-                'Qwen/Qwen2.5-72B-Instruct': 'qwen3.5-plus',
-                'Qwen/Qwen2.5-Coder-32B-Instruct': 'qwen3-coder-plus',
-                'meta-llama/Llama-3.3-70B-Instruct': 'gemini-3-flash',
-                'mistralai/Mistral-Small-24B-Instruct-2501': 'gemini-3-flash',
-            };
-            const originalModel = parsed.model || 'Qwen/Qwen2.5-72B-Instruct';
-            parsed.model = MODEL_MAP[originalModel] || 'qwen3.5-plus';
+            if (!parsed.model) parsed.model = 'Qwen/Qwen2.5-72B-Instruct';
 
-            console.log(`  [CHAT] ${originalModel} -> ${parsed.model}`);
+            console.log(`  [CHAT] Model: ${parsed.model}`);
 
             const proxyBody = JSON.stringify(parsed);
             const options = {
-                hostname: 'gpt.crax.lol',
+                hostname: 'router.huggingface.co',
                 path: '/v1/chat/completions',
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 Pytron/1.0'
+                    'Authorization': `Bearer ${process.env.HF_TOKEN || ''}`
                 }
             };
 
