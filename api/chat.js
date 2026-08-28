@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
 
     try {
         const parsed = req.body || {};
-        parsed.model = 'gemini-2.5-flash';
+        parsed.model = 'gemini-3.6-flash';
         const isStream = parsed.stream === true;
 
         const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
