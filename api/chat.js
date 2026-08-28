@@ -6,21 +6,13 @@ module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') return res.status(204).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const HF_TOKEN = process.env.HF_TOKEN;
-    if (!HF_TOKEN) {
-        return res.status(500).json({ error: { message: 'HF_TOKEN no configurado.' } });
-    }
-
     try {
         const parsed = req.body || {};
-        if (!parsed.model) parsed.model = 'Qwen/Qwen2.5-72B-Instruct';
+        parsed.model = 'openai-fast';
 
-        const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+        const response = await fetch('https://text.pollinations.ai/openai', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${HF_TOKEN}`
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(parsed)
         });
 

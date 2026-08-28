@@ -34,58 +34,44 @@ const server = http.createServer((req, res) => {
         console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
     }
 
-    // Proxy API requests to Hugging Face
+    // Proxy API requests to Pollinations.ai (free, no API key needed)
     if (req.url === '/api/chat' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => body += chunk);
-        req.on('end', () => {
+        req.on('end', async () => {
             let parsed;
             try { parsed = JSON.parse(body); } catch { parsed = {}; }
 
-            if (!parsed.model) parsed.model = 'Qwen/Qwen2.5-72B-Instruct';
-
+            parsed.model = 'openai-fast';
             console.log(`  [CHAT] Model: ${parsed.model}`);
 
-            const proxyBody = JSON.stringify(parsed);
-            const options = {
-                hostname: 'router.huggingface.co',
-                path: '/v1/chat/completions',
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${process.env.HF_TOKEN || ''}`
-                }
-            };
+            try {
+                const response = await fetch('https://text.pollinations.ai/openai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(parsed)
+                });
 
-            const proxyReq = https.request(options, (proxyRes) => {
-                console.log(`  -> API responded: ${proxyRes.statusCode}`);
-                if (proxyRes.statusCode !== 200) {
-                    let errBody = '';
-                    proxyRes.on('data', c => errBody += c);
-                    proxyRes.on('end', () => {
-                        console.log(`  -> Error: ${errBody.substring(0, 200)}`);
-                        res.writeHead(proxyRes.statusCode, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-                        res.end(JSON.stringify({ error: { message: 'Error del servicio de IA. Intenta de nuevo.' } }));
-                    });
+                const data = await response.text();
+                console.log(`  -> API responded: ${response.status}`);
+
+                if (!response.ok) {
+                    res.writeHead(response.status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+                    res.end(JSON.stringify({ error: { message: 'Error del servicio de IA. Intenta de nuevo.' } }));
                     return;
                 }
-                res.writeHead(200, {
-                    'Content-Type': proxyRes.headers['content-type'] || 'text/event-stream',
-                    'Cache-Control': 'no-cache',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-                });
-                proxyRes.pipe(res);
-            });
 
-            proxyReq.on('error', (err) => {
+                res.writeHead(200, {
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache',
+                    'Access-Control-Allow-Origin': '*'
+                });
+                res.end(data);
+            } catch (err) {
                 console.error(`  -> API error: ${err.message}`);
                 res.writeHead(502, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
                 res.end(JSON.stringify({ error: { message: 'No se pudo conectar con el servicio de IA: ' + err.message } }));
-            });
-
-            proxyReq.write(proxyBody);
-            proxyReq.end();
+            }
         });
         return;
     }
