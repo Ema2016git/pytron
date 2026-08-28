@@ -525,18 +525,57 @@ function grantAdmin(username) {
 
 function openAdminPanel() {
     if (!isAdmin()) {
-        const code = prompt('Ingresa el código de administrador:');
-        if (code !== ADMIN_CODE) {
-            if (code !== null) showToast('Código incorrecto.', 'error');
-            return;
-        }
-        grantAdmin(APP.currentUser.username);
-        showToast('Acceso de administrador activado permanentemente.', 'success');
+        showAdminCodeModal();
+        return;
     }
     const modal = document.getElementById('adminModal');
     if (!modal) return;
     renderAdminPanel();
     modal.classList.remove('hidden');
+}
+
+function showAdminCodeModal() {
+    let overlay = document.getElementById('adminCodeOverlay');
+    if (overlay) { overlay.classList.remove('hidden'); return; }
+    overlay = document.createElement('div');
+    overlay.id = 'adminCodeOverlay';
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal" style="max-width:360px">
+            <div class="modal-header">
+                <h2>🔐 Acceso Admin</h2>
+                <button class="modal-close" onclick="document.getElementById('adminCodeOverlay').classList.add('hidden')">&times;</button>
+            </div>
+            <div style="padding:20px">
+                <p style="color:var(--text-secondary);margin-bottom:16px;font-size:14px">Ingresa el código de administrador para obtener control total.</p>
+                <input type="password" id="adminCodeInput" placeholder="Código de admin" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-tertiary);color:var(--text-primary);font-size:16px;margin-bottom:12px;box-sizing:border-box" autocomplete="off">
+                <p id="adminCodeError" style="color:var(--danger);font-size:13px;margin-bottom:12px;display:none"></p>
+                <button onclick="verifyAdminCode()" style="width:100%;padding:12px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:14px;font-weight:600;cursor:pointer">Verificar</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.add('hidden'); });
+    setTimeout(() => document.getElementById('adminCodeInput').focus(), 100);
+    document.getElementById('adminCodeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') verifyAdminCode(); });
+}
+
+function verifyAdminCode() {
+    const input = document.getElementById('adminCodeInput');
+    const error = document.getElementById('adminCodeError');
+    const code = input.value.trim();
+    if (code === ADMIN_CODE) {
+        grantAdmin(APP.currentUser.username);
+        document.getElementById('adminCodeOverlay').classList.add('hidden');
+        input.value = '';
+        error.style.display = 'none';
+        showToast('Acceso de administrador activado permanentemente.', 'success');
+        openAdminPanel();
+    } else {
+        error.textContent = 'Código incorrecto. Intenta de nuevo.';
+        error.style.display = 'block';
+        input.value = '';
+        input.focus();
+    }
 }
 
 function closeAdminModal() {
