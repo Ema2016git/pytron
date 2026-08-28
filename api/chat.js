@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
         const data = await response.text();
 
         if (!response.ok) {
-            return res.status(response.status).json({ error: { message: 'Error del servicio de IA. Intenta de nuevo.' } });
+            return res.status(response.status).json({ error: { message: 'API error ' + response.status + ': ' + data.substring(0, 200) } });
         }
 
         res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
