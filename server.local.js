@@ -43,7 +43,7 @@ const server = http.createServer((req, res) => {
             try { parsed = JSON.parse(body); } catch { parsed = {}; }
 
             const API_KEY = process.env.GEMINI_API_KEY || '';
-            parsed.model = 'gemini-2.0-flash';
+            parsed.model = 'gemini-2.5-flash';
             console.log(`  [CHAT] Model: ${parsed.model}`);
 
             try {
