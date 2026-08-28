@@ -3,15 +3,15 @@ const https = require('https');
 const HF_TOKEN = process.env.HF_TOKEN || '';
 
 module.exports = async (req, res) => {
-    if (req.method === 'OPTIONS') {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        return res.status(204).end();
-    }
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+    if (req.method === 'OPTIONS') return res.status(204).end();
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+    if (!HF_TOKEN) {
+        return res.status(500).json({ error: { message: 'HF_TOKEN no configurado en el servidor.' } });
     }
 
     const parsed = req.body || {};
@@ -26,31 +26,35 @@ module.exports = async (req, res) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${HF_TOKEN}`
+                'Authorization': `Bearer ${HF_TOKEN}`,
+                'Content-Length': Buffer.byteLength(proxyBody)
             }
         };
 
         const proxyReq = https.request(options, (proxyRes) => {
-            if (proxyRes.statusCode !== 200) {
-                let errBody = '';
-                proxyRes.on('data', c => errBody += c);
-                proxyRes.on('end', () => {
-                    console.log(`[CHAT] Error ${proxyRes.statusCode}:`, errBody.substring(0, 200));
-                    res.status(proxyRes.statusCode).json({ error: { message: 'Error del servicio de IA. Intenta de nuevo.' } });
-                    resolve();
-                });
-                return;
-            }
+            const chunks = [];
+            proxyRes.on('data', chunk => chunks.push(chunk));
+            proxyRes.on('end', () => {
+                const body = Buffer.concat(chunks).toString();
+                const ct = proxyRes.headers['content-type'] || 'application/json';
 
-            res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'text/event-stream');
-            res.setHeader('Cache-Control', 'no-cache');
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            proxyRes.pipe(res);
-            proxyRes.on('end', resolve);
+                if (proxyRes.statusCode !== 200) {
+                    res.status(proxyRes.statusCode);
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify({ error: { message: 'Error del servicio de IA. Intenta de nuevo.' } }));
+                    resolve();
+                    return;
+                }
+
+                res.setHeader('Content-Type', ct);
+                res.setHeader('Cache-Control', 'no-cache');
+                res.status(200).end(body);
+                resolve();
+            });
         });
 
         proxyReq.on('error', (err) => {
-            res.status(502).json({ error: { message: 'No se pudo conectar con el servicio de IA: ' + err.message } });
+            res.status(502).json({ error: { message: 'No se pudo conectar: ' + err.message } });
             resolve();
         });
 
