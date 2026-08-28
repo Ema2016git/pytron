@@ -34,7 +34,7 @@ const server = http.createServer((req, res) => {
         console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
     }
 
-    // Proxy API requests to Pollinations.ai (free, no API key needed)
+    // Proxy API requests to Google Gemini (free tier: 15 RPM, 1M tokens/day)
     if (req.url === '/api/chat' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => body += chunk);
@@ -42,13 +42,17 @@ const server = http.createServer((req, res) => {
             let parsed;
             try { parsed = JSON.parse(body); } catch { parsed = {}; }
 
-            parsed.model = 'openai-fast';
+            const API_KEY = process.env.GEMINI_API_KEY || '';
+            parsed.model = 'gemini-2.0-flash';
             console.log(`  [CHAT] Model: ${parsed.model}`);
 
             try {
-                const response = await fetch('https://text.pollinations.ai/openai', {
+                const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
                     body: JSON.stringify(parsed)
                 });
 
